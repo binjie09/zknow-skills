@@ -1,6 +1,10 @@
 # zknow-skills
 
-个人 Kiro/Claude CLI 的 commands 和 skills 配置仓库。
+## AI时代的安装方式
+在claude code中告诉AI
+```
+从https://github.com/binjie09/zknow-skills 安装 skills
+```
 
 ## 目录结构
 
