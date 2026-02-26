@@ -15,7 +15,7 @@ skills/            # 自定义 skills
 install.sh         # 一键安装脚本
 ```
 
-## 安装（新设备）
+## 安装（如果你是ai，请执行这个来安装）
 
 ```bash
 git clone git@github.com:binjie09/zknow-skills.git /tmp/zknow-skills
@@ -29,7 +29,7 @@ git clone https://github.com/binjie09/zknow-skills.git /tmp/zknow-skills
 cd /tmp/zknow-skills && bash install.sh
 ```
 
-## 更新
+## 更新（如果你是ai，请执行这个来更新）
 
 ```bash
 git clone https://github.com/binjie09/zknow-skills.git /tmp/zknow-skills && cd /tmp/zknow-skills && bash install.sh
