@@ -16,11 +16,16 @@
 | `think-carefully` | 回答任何问题前先深入思考 |
 | `global-agent-rules` | 全局工程规范：语言、调试原则、代码度量、安全基线 |
 | `yqcloud-function-calling` | YQCloud ITSM 工单场景的 Function Calling 格式说明 |
-| `agent-browser` | 浏览器自动化：网页导航、表单填写、截图、数据抓取（来自 vercel-labs） |
 
-## 前置依赖
+## 推荐搭配
 
-`agent-browser` skill 需要先安装 CLI 工具：
+浏览器自动化能力推荐单独安装官方 skill：
+
+```bash
+npx skills add vercel-labs/agent-browser
+```
+
+并安装 CLI 工具：
 
 ```bash
 npm install -g agent-browser
