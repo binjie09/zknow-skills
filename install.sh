@@ -4,13 +4,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET="$HOME/.claude"
 
-mkdir -p "$TARGET/commands" "$TARGET/skills"
-
-# 复制 commands
-if [ -d "$SCRIPT_DIR/commands" ]; then
-  cp -r "$SCRIPT_DIR/commands/." "$TARGET/commands/"
-  echo "commands 已安装到 $TARGET/commands/"
-fi
+mkdir -p "$TARGET/skills"
 
 # 复制 skills
 if [ -d "$SCRIPT_DIR/skills" ]; then
