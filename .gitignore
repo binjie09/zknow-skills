@@ -1,0 +1,16 @@
+debug/
+downloads/
+file-history/
+paste-cache/
+plugins/
+projects/
+session-env/
+shell-snapshots/
+todos/
+history.jsonl
+settings.conf/
+settings.json
+settings.json.glm
+stats-cache.json
+*.log
+.DS_Store
