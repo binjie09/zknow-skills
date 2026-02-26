@@ -16,6 +16,7 @@
 | `think-carefully` | 回答任何问题前先深入思考 |
 | `global-agent-rules` | 全局工程规范：语言、调试原则、代码度量、安全基线 |
 | `yqcloud-function-calling` | YQCloud ITSM 工单场景的 Function Calling 格式说明 |
+| `agent-browser` | 浏览器自动化：网页导航、表单填写、截图、数据抓取（来自 vercel-labs） |
 
 ## 通过 npx skills 安装（推荐）
 
