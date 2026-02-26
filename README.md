@@ -19,20 +19,20 @@ install.sh         # 一键安装脚本
 
 ```bash
 git clone git@github.com:binjie09/zknow-skills.git /tmp/zknow-skills
-cd /tmp/zknow-skills && bash install.sh
+bash /tmp/zknow-skills/install.sh
 ```
 
 或使用 HTTPS：
 
 ```bash
 git clone https://github.com/binjie09/zknow-skills.git /tmp/zknow-skills
-cd /tmp/zknow-skills && bash install.sh
+bash /tmp/zknow-skills/install.sh
 ```
 
 ## 更新（如果你是ai，请执行这个来更新）
 
 ```bash
-git clone https://github.com/binjie09/zknow-skills.git /tmp/zknow-skills && cd /tmp/zknow-skills && bash install.sh
+git clone https://github.com/binjie09/zknow-skills.git /tmp/zknow-skills && bash /tmp/zknow-skills/install.sh
 ```
 
 或如果已有本地克隆：
