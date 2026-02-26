@@ -18,6 +18,14 @@
 | `yqcloud-function-calling` | YQCloud ITSM 工单场景的 Function Calling 格式说明 |
 | `agent-browser` | 浏览器自动化：网页导航、表单填写、截图、数据抓取（来自 vercel-labs） |
 
+## 前置依赖
+
+`agent-browser` skill 需要先安装 CLI 工具：
+
+```bash
+npm install -g agent-browser
+```
+
 ## 通过 npx skills 安装（推荐）
 
 ```bash
