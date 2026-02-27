@@ -26,7 +26,7 @@ user-invocable: true
 - `image_path`: 本地图片路径（可选，用于图片修改场景）
 - `api_key`: API Key（可选，覆盖环境变量）
 - `base_url`: 自定义 Base URL（可选）
-- `model`: 模型名称（可选，默认 `gemini-2.0-flash-preview-image-generation`）
+- `model`: 模型名称（可选，默认 `gemini-3.1-flash-image-preview`）
 
 ## 3. 构造请求
 
@@ -141,4 +141,4 @@ echo "{base64_data}" | base64 -d > output_image.png
 - API Key 敏感，不要在输出中明文显示完整 key（只显示前4位+****）
 - 若请求失败，显示错误信息并给出排查建议
 - 支持的图片格式：PNG、JPEG、WEBP、GIF
-- 模型名称示例：`gemini-2.0-flash-preview-image-generation`、`gemini-3.1-flash-image-preview`
+- 模型名称示例：`gemini-3.1-flash-image-preview`
