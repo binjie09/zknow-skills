@@ -33,7 +33,7 @@ user-invocable: true
 ### 纯文本生成图片
 
 ```bash
-curl --location '{base_url}/models/{model}:generateContent' \
+curl --location '{base_url}/models/gemini-3.1-flash-image-preview:generateContent' \
   --header 'x-goog-api-key: {api_key}' \
   --header 'Content-Type: application/json' \
   --data '{
