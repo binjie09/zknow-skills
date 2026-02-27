@@ -87,7 +87,7 @@ with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
 
 result = subprocess.run([
     "curl", "-s", "-X", "POST",
-    f"{base_url}/models/{model}:generateContent",
+    f"{base_url}/models/gemini-3.1-flash-image-preview:generateContent",
     "-H", f"x-goog-api-key: {api_key}",
     "-H", "Content-Type: application/json",
     "-d", f"@{tmp_path}"
