@@ -50,32 +50,52 @@ curl --location '{base_url}/models/{model}:generateContent' \
 
 ### 图片修改（提供了 image_path）
 
-先将图片转为 base64，再构造请求：
+用 Python 构造 JSON payload，避免 base64 大数据在 shell 字符串中出错：
 
 ```bash
-# 转换图片为 base64
-BASE64_IMAGE=$(base64 -w 0 "{image_path}")
-MIME_TYPE=$(file --mime-type -b "{image_path}")
+python3 - <<'PYEOF'
+import base64, json, subprocess, sys
 
-curl --location '{base_url}/models/{model}:generateContent' \
-  --header 'x-goog-api-key: {api_key}' \
-  --header 'Content-Type: application/json' \
-  --data '{
+image_path = "{image_path}"
+prompt     = "{prompt}"
+api_key    = "{api_key}"
+base_url   = "{base_url}"
+model      = "{model}"
+
+with open(image_path, "rb") as f:
+    b64 = base64.b64encode(f.read()).decode()
+
+# 推断 mime type
+ext = image_path.rsplit(".", 1)[-1].lower()
+mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg",
+        "png": "image/png", "webp": "image/webp",
+        "gif": "image/gif"}.get(ext, "image/jpeg")
+
+payload = {
     "contents": [{
-      "parts": [
-        {"text": "{prompt}"},
-        {
-          "inline_data": {
-            "mime_type": "'"$MIME_TYPE"'",
-            "data": "'"$BASE64_IMAGE"'"
-          }
-        }
-      ]
-    }],
-    "generationConfig": {
-      "responseModalities": ["TEXT", "IMAGE"]
-    }
-  }'
+        "parts": [
+            {"text": prompt},
+            {"inline_data": {"mime_type": mime, "data": b64}}
+        ]
+    }]
+}
+
+import tempfile, os
+with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+    json.dump(payload, tmp)
+    tmp_path = tmp.name
+
+result = subprocess.run([
+    "curl", "-s", "-X", "POST",
+    f"{base_url}/models/{model}:generateContent",
+    "-H", f"x-goog-api-key: {api_key}",
+    "-H", "Content-Type: application/json",
+    "-d", f"@{tmp_path}"
+], capture_output=True, text=True)
+
+os.unlink(tmp_path)
+print(result.stdout)
+PYEOF
 ```
 
 ## 4. 处理响应
