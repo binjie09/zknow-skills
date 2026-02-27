@@ -17,7 +17,7 @@ user-invocable: true
 
 默认值：
 - `base_url`: `https://generativelanguage.googleapis.com/v1beta`
-- `model`: `gemini-2.0-flash-preview-image-generation`
+- `model`: `gemini-3.1-flash-image-preview`
 
 ## 2. 解析用户意图
 
