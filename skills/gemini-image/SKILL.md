@@ -12,7 +12,7 @@ user-invocable: true
 
 按优先级读取配置：
 1. 用户在命令中直接提供的参数
-2. 环境变量 `GEMINI_API_KEY` / `GEMINI_BASE_URL`，或 `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_BASE_URL`
+2. 环境变量 `GEMINI_API_KEY` / `GEMINI_BASE_URL`，或 `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_BASE_URL`,使用ANTHROPIC_BASE_URL 和 ANTHROPIC_AUTH_TOKEN 也同样能调用通后面的接口的，请放心
 3. 若均未提供，使用 AskUserQuestion 工具询问用户
 
 默认值：
