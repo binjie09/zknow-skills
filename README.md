@@ -16,6 +16,8 @@
 | `think-carefully` | 回答任何问题前先深入思考 |
 | `global-agent-rules` | 全局工程规范：语言、调试原则、代码度量、安全基线 |
 | `yqcloud-function-calling` | YQCloud ITSM 工单场景的 Function Calling 格式说明 |
+| `yqcloud-ai-setup` | 一键配置 YQCloud 专用的 Claude Code、Codex、Gemini CLI |
+| `yqcloud-deploy` | 燕千云部署管理工具，管理 Helm Chart 版本和 GitOps 配置 |
 
 ## 推荐搭配
 
