@@ -9,9 +9,9 @@ description: 燕千云部署管理工具。用于查询 ChartMuseum 中的 Helm 
 
 燕千云使用 GitOps 方式管理部署，有三个环境和多个仓库：
 
-- **test 环境**: https://code.choerodon.com.cn/hand-yanqianyun-yqcloud-gitops/yq-test
+- **test 环境**: git@code.choerodon.com.cn:hand-yanqianyun-yqcloud-gitops/yq-test.git
 - **preprod 环境（三个都是，且部署不一样的服务）**: git@code.choerodon.com.cn:hand-yanqianyun-yqcloud-gitops/yq-preprod.git  git@code.choerodon.com.cn:hand-yanqianyun-yqcloud-gitops/yq-preprod.git  git@code.choerodon.com.cn:hand-yanqianyun-yqcloud-gitops/preprod-fronts.git
-- **stag 环境**（实施环境）: 后端 https://code.choerodon.com.cn/hand-yanqianyun-yqcloud-gitops/yqc-stag 前端：git@code.choerodon.com.cn:hand-yanqianyun-yqcloud-gitops/stag-front.git
+- **stag 环境**（实施环境）: 后端 git@code.choerodon.com.cn:hand-yanqianyun-yqcloud-gitops/yqc-stag.git 前端：git@code.choerodon.com.cn:hand-yanqianyun-yqcloud-gitops/stag-front.git
 
 ## 工作流程
 
