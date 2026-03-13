@@ -2,6 +2,10 @@
 
 个人 Kiro/Claude CLI 的 skills 配置仓库。
 
+## 一键安装
+
+npx skills add git@code.choerodon.com.cn:hand-yanqianyun-yqcloud/yqcloud-ai-skills.git
+
 ## AI 时代的安装方式
 
 在 Claude Code 中告诉 AI：
