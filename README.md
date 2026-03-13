@@ -19,6 +19,7 @@
 | `yqcloud-ai-setup` | 一键配置 YQCloud 专用的 Claude Code、Codex、Gemini CLI |
 | `yqcloud-deploy` | 燕千云部署管理工具，管理 Helm Chart 版本和 GitOps 配置 |
 | `yqcloud-login-auth` | 燕千云 OAuth 登录认证，启动临时服务器获取 token 并存储 |
+| `yqcloud-knowledge` | 燕千云知识库查询，语义检索内部文档和产品说明 |
 | `yqcloud-script` | YQCloud / 燕千云 JS 脚本编写指南，覆盖字段脚本、业务规则、过滤和值集联动 |
 
 ## 推荐搭配
