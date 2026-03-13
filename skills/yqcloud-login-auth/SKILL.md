@@ -75,12 +75,19 @@ python3 "$(dirname "$0")/../skills/yqcloud-login-auth/scripts/oauth_server.py"
 认证完成后验证 token 是否可用：
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}" \
-  -H "Authorization: Bearer $(cat ~/.yqcloud_tmp/token.json | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')" \
-  https://support.yqcloud.com/oauth/api/user
+ACCESS_TOKEN=$(python3 -c 'import json; print(json.load(open("'$HOME'/.yqcloud_tmp/token.json"))["access_token"])')
+curl -s -w "\nHTTP_STATUS: %{http_code}" \
+  --header "accept: application/json" \
+  --header "accept-language: zh-CN,zh;q=0.9,zh-TW;q=0.8" \
+  --header "authorization: bearer $ACCESS_TOKEN" \
+  --header "content-type: application/json" \
+  --header "origin: https://support.yqcloud.com" \
+  --header "referer: https://support.yqcloud.com/" \
+  --header "x-tenant-id: 228549383619211264" \
+  "https://api.yqcloud.com/iam/yqc/users/self"
 ```
 
-返回 `200` 表示 token 有效。
+返回 HTTP `200` 且包含用户信息表示 token 有效。
 
 ## 在其他脚本中使用 Token
 

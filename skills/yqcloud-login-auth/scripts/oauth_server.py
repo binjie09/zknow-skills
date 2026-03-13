@@ -13,12 +13,16 @@ import signal
 import sys
 import threading
 import urllib.parse
+import urllib.request
 import webbrowser
 from pathlib import Path
 
 PORT = 49658
 TOKEN_DIR = Path.home() / ".yqcloud_tmp"
 TOKEN_FILE = TOKEN_DIR / "token.json"
+
+VERIFY_URL = "https://api.yqcloud.com/iam/yqc/users/self"
+TENANT_ID = "228549383619211264"
 
 OAUTH_URL = (
     "https://support.yqcloud.com/oauth/oauth/authorize"
@@ -96,7 +100,16 @@ CALLBACK_HTML = """<!DOCTYPE html>
   xhr.onreadystatechange = function() {
     if (xhr.readyState === 4) {
       if (xhr.status === 200) {
-        showSuccess(params.access_token);
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          if (resp.user_name) {
+            showSuccess(params.access_token, resp.user_name);
+          } else {
+            showSuccess(params.access_token, null);
+          }
+        } catch(e) {
+          showSuccess(params.access_token, null);
+        }
       } else {
         showError("存储失败", "无法保存 token，请检查服务端日志。");
       }
@@ -104,12 +117,14 @@ CALLBACK_HTML = """<!DOCTYPE html>
   };
   xhr.send(JSON.stringify(params));
 
-  function showSuccess(token) {
+  function showSuccess(token, userName) {
     var card = document.getElementById("card");
     card.className = "card success";
     document.getElementById("icon").innerHTML = "&#x2705;";
     document.getElementById("title").textContent = "认证成功";
-    document.getElementById("message").textContent = "Token 已保存，您可以关闭此页面。";
+    var msg = "Token 已保存，您可以关闭此页面。";
+    if (userName) msg = "欢迎，" + userName + "！Token 已保存，您可以关闭此页面。";
+    document.getElementById("message").textContent = msg;
     var detail = document.getElementById("detail");
     detail.style.display = "block";
     detail.textContent = "access_token: " + token.substring(0, 8) + "..." + token.substring(token.length - 4);
@@ -127,6 +142,30 @@ CALLBACK_HTML = """<!DOCTYPE html>
 </body>
 </html>
 """
+
+
+def verify_token(access_token):
+    """调用 YQCloud API 验证 token 有效性，返回用户名或 None。"""
+    req = urllib.request.Request(
+        VERIFY_URL,
+        headers={
+            "Accept": "application/json",
+            "Accept-Language": "zh-CN,zh;q=0.9,zh-TW;q=0.8",
+            "Authorization": f"bearer {access_token}",
+            "Content-Type": "application/json",
+            "Origin": "https://support.yqcloud.com",
+            "Referer": "https://support.yqcloud.com/",
+            "X-Tenant-Id": TENANT_ID,
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read())
+                return data.get("realName") or data.get("loginName") or data.get("email")
+    except Exception:
+        pass
+    return None
 
 
 class OAuthHandler(http.server.BaseHTTPRequestHandler):
@@ -160,17 +199,27 @@ class OAuthHandler(http.server.BaseHTTPRequestHandler):
         TOKEN_DIR.mkdir(parents=True, exist_ok=True)
         TOKEN_FILE.write_text(json.dumps(token_data, indent=2, ensure_ascii=False))
 
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-        self.wfile.write(json.dumps({"status": "ok"}).encode("utf-8"))
-
         access_token = token_data.get("access_token", "")
         masked = access_token[:8] + "..." + access_token[-4:] if len(access_token) > 12 else "***"
         print(f"\n[OK] Token 已保存到 {TOKEN_FILE}")
         print(f"     access_token: {masked}")
         print(f"     token_type:   {token_data.get('token_type', 'N/A')}")
         print(f"     expires_in:   {token_data.get('expires_in', 'N/A')}")
+
+        # 验证 token 有效性
+        response_data = {"status": "ok"}
+        user_name = verify_token(access_token)
+        if user_name:
+            response_data["user_name"] = user_name
+            print(f"     用户:         {user_name}")
+            print(f"[OK] Token 验证通过")
+        else:
+            print(f"[WARN] Token 验证失败或无法连接验证服务，token 已保存但未验证")
+
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response_data, ensure_ascii=False).encode("utf-8"))
 
         # 延迟关闭服务器，让响应先发送完毕
         threading.Timer(1.0, self.server.shutdown).start()
