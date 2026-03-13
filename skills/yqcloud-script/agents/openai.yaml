@@ -1,0 +1,4 @@
+interface:
+  display_name: "YQCloud Script"
+  short_description: "YQCloud JS 脚本编写规则与案例手册"
+  default_prompt: "Use $yqcloud-script to write or review YQCloud field scripts, business rules, filter scripts, and action scripts."
