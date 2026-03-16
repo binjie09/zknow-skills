@@ -1,91 +1,225 @@
 ---
 name: yqcloud-function-calling
-description: YQCloud 自定义 Function Calling 格式说明，用于 ITSM 工单场景。包含 createTicket、getCreateTicketParamJsonSchema、getAllServiceItem、requestUserSelectServiceItem 四个函数的调用规范和典型流程。
+description: YQCloud 自定义 Function Calling 格式说明。定义了一套 JSON 格式用于声明 AI 可调用的函数，运行时由 yqcloud-ai-node 执行 HTTP 请求并返回结果。涵盖 ITSM 工单场景和知识库查询场景。
 user-invocable: false
 ---
 
-# YQCloud 自定义 Function Calling 格式说明
+# YQCloud 自定义 Function Calling 格式
 
-本 skill 描述了一套自定义的 function calling 格式，用于 ITSM（IT服务管理）场景下的工单操作。
-
-## 格式结构说明
-
-每个函数定义包含两层结构：
-- 外层：标准的函数描述（name、description、parameters）
-- 内层 `function` 字段：执行配置（type、url、headers 等）
-
-### 函数类型（function.type）
-
-| 类型 | 说明 |
-|------|------|
-| `manual` | 手动处理，由前端/系统自行实现逻辑，不发起 HTTP 请求 |
-| `call_url` | 自动发起 HTTP 请求到指定 URL |
-
-### 通用字段
-
-- `stopAfterFunctionCall`：调用函数后是否停止 AI 继续生成（true=停止，false=继续）
-- `intl`：国际化配置，包含 `zh_CN` 和 `en_US`
-- `requestParser`：JavaScript 代码字符串，`data` 为 AI 函数调用参数的 JSON 字符串（需 `JSON.parse(data)` 解析）
-- `responseParser`：JavaScript 代码字符串，`data` 为响应体对象，可使用 `_`（lodash）
-
-### 变量占位符
-
-- `${STATIC#yqcloud_url}`：YQCloud 服务基础地址
-- `${tenantId}`：当前租户 ID
-- `${yqAccessToken}`：当前用户访问令牌
+yqcloud-ai-node 运行时接收符合此格式的函数定义，AI 决定调用某函数后，运行时自动发起 HTTP 请求（或交由前端处理），并将结果返回给 AI 继续对话。
 
 ---
 
-## 函数列表
+## 1. JSON 结构
 
-### 1. createTicket — 创建工单
+每个函数定义是一个 JSON 对象，包含**外层**（给 AI 看的标准 function calling 描述）和**内层 `function` 字段**（给运行时看的执行配置）。
 
-- **类型**：`manual`（前端自行处理，不发 HTTP 请求）
-- **stopAfterFunctionCall**：`true`
-- **参数**：`additionalProperties: true`，接受任意字段
-- **调用时机**：已获取表单 Schema 并从用户处收集完所有字段后调用
+```jsonc
+{
+  // ===== 外层：AI 可见 =====
+  "name": "函数名",
+  "description": "函数用途描述，AI 据此判断何时调用",
+  "parameters": {
+    "type": "object",
+    "properties": { /* AI 需要填的参数 */ },
+    "required": ["必填参数名"]
+  },
 
-### 2. getCreateTicketParamJsonSchema — 获取工单参数 Schema
+  // ===== 内层：运行时执行配置 =====
+  "function": {
+    "type": "call_url",          // "call_url" = 发 HTTP 请求 | "manual" = 前端自行处理
+    "method": "GET",             // HTTP 方法
+    "url": "请求地址",            // 支持变量占位符和路径参数
+    "headers": {},               // 请求头
+    "queryParams": "a,b",        // 可选，逗号分隔。指定哪些参数放 query string，其余放 body
+    "defaultPostData": {},       // 可选，POST 请求的默认 body 数据
+    "requestParser": "JS代码",   // 可选，预处理 AI 传来的参数
+    "responseParser": "JS代码",  // 可选，后处理 HTTP 响应
+    "stopAfterFunctionCall": false,  // true = 调用后停止 AI 继续生成
+    "stopAfterFunctionCallCondition": "JS代码",  // 可选，动态判断是否停止
+    "typingMessage": "正在查询...",  // 可选，调用中显示给用户的提示
+    "resultTips": "查询完成",        // 可选，结果返回时的提示
+    "toolChoice": {},               // 可选，强制 AI 选择某工具
+    "extraParamsBuilder": "JS代码"  // 可选，从结果中提取额外参数
+  },
 
-- **类型**：`call_url`，GET 请求
-- **URL**：`${STATIC#yqcloud_url}/ai/v1/${tenantId}/itsmScene/getServiceItemSchema`
-- **stopAfterFunctionCall**：`false`
-- **必填参数**：`id`（string，服务项 ID）
-- **调用时机**：确定服务项后立即调用，根据返回的 Schema 向用户逐一收集字段
+  // ===== 国际化（可选）=====
+  "intl": {
+    "zh_CN": { "description": "中文描述" },
+    "en_US": { "description": "English description" }
+  }
+}
+```
 
-### 3. getAllServiceItem — 获取全部服务项
+## 2. 变量占位符
 
-- **类型**：`call_url`，GET 请求
-- **URL**：`${STATIC#yqcloud_url}/itsm/v1/${tenantId}/service_items/catalog/page/all?serviceCatalogFlag=true&page=0&size=9999`
-- **参数**：无必填参数
-- **responseParser**：过滤 `type === 'SERVICE' || type === 'RECORD'`，只保留 `id`、`name`、`shortDescription`、`description`，返回 `{ allServiceItemList: [...] }`
-- **调用时机**：用户提出任何工单相关需求后第一步调用
+在 `url` 和 `headers` 中可使用以下占位符，运行时自动替换：
 
-### 4. requestUserSelectServiceItem — 请求用户选择服务项
+| 占位符 | 含义 |
+|--------|------|
+| `${STATIC#yqcloud_url}` | YQCloud API 基础地址（如 `https://api.yqcloud.com`） |
+| `${tenantId}` | 当前租户 ID |
+| `${yqAccessToken}` | 当前用户 access_token |
 
-- **类型**：`call_url`，POST 请求，URL：`/transparent`
-- **stopAfterFunctionCall**：`true`
-- **必填参数**：`serviceItemList`（array，**最多传 1 个**最可能匹配的服务项）
-- **responseParser**：`return data?.serviceItemList ? data : {result: 'no data'}`
-- **调用时机**：AI 无法确定具体服务项时调用
+## 3. URL 路径参数
+
+URL 中的 `{paramName}` 占位符会被 AI 传入的同名参数值替换。替换后该参数自动从 query/body 中移除，不会重复传参。
+
+示例：URL 为 `/api/v1/know/{knowId}`，AI 传参 `{ "knowId": "abc123" }`，实际请求 `/api/v1/know/abc123`。
+
+## 4. 参数传递规则
+
+| HTTP 方法 | 默认行为 | 有 `queryParams` 时 |
+|-----------|----------|---------------------|
+| GET | 所有参数 → query string | `queryParams` 指定的 → query string |
+| POST | 所有参数 → request body | `queryParams` 指定的 → query string，其余 → body |
+
+## 5. JS 代码字段
+
+| 字段 | 入参 | 用途 |
+|------|------|------|
+| `requestParser` | `data`（JSON 字符串）、`_`（lodash） | 预处理 AI 参数后返回新对象 |
+| `responseParser` | `data`（响应体对象）、`_`（lodash） | 后处理响应后返回给 AI |
+| `stopAfterFunctionCallCondition` | `data`（响应对象）、`_`（lodash） | 返回 true 则停止 AI 继续 |
+| `extraParamsBuilder` | `data`（响应对象）、`_`（lodash） | 提取额外参数传给前端 |
+
+## 6. 特殊 URL
+
+- **`/transparent`**：不发 HTTP 请求，直接把 AI 传的参数作为"响应"返回。用于需要前端处理的交互场景。
 
 ---
 
-## 典型调用流程
+## 7. 现有函数定义
 
+### 7.1 ITSM 工单场景
+
+#### getAllServiceItem — 获取全部服务项
+
+```json
+{
+  "name": "getAllServiceItem",
+  "description": "获取全部服务项列表，用于匹配用户的工单需求",
+  "parameters": { "type": "object", "properties": {} },
+  "function": {
+    "type": "call_url",
+    "method": "GET",
+    "url": "${STATIC#yqcloud_url}/itsm/v1/${tenantId}/service_items/catalog/page/all?serviceCatalogFlag=true&page=0&size=9999",
+    "headers": { "Authorization": "bearer ${yqAccessToken}" },
+    "stopAfterFunctionCall": false,
+    "responseParser": "const list = (data?.content || []).filter(i => i.type === 'SERVICE' || i.type === 'RECORD').map(i => _.pick(i, ['id','name','shortDescription','description'])); return { allServiceItemList: list };"
+  }
+}
+```
+
+#### getCreateTicketParamJsonSchema — 获取工单表单 Schema
+
+```json
+{
+  "name": "getCreateTicketParamJsonSchema",
+  "description": "根据服务项 ID 获取创建工单所需的表单字段 Schema",
+  "parameters": {
+    "type": "object",
+    "properties": { "id": { "type": "string", "description": "服务项 ID" } },
+    "required": ["id"]
+  },
+  "function": {
+    "type": "call_url",
+    "method": "GET",
+    "url": "${STATIC#yqcloud_url}/ai/v1/${tenantId}/itsmScene/getServiceItemSchema",
+    "headers": { "Authorization": "bearer ${yqAccessToken}" },
+    "stopAfterFunctionCall": false
+  }
+}
+```
+
+#### requestUserSelectServiceItem — 请求用户选择服务项
+
+```json
+{
+  "name": "requestUserSelectServiceItem",
+  "description": "当无法确定服务项时，展示候选列表让用户选择（最多传 1 个最可能匹配的）",
+  "parameters": {
+    "type": "object",
+    "properties": { "serviceItemList": { "type": "array", "description": "候选服务项列表，最多 1 个" } },
+    "required": ["serviceItemList"]
+  },
+  "function": {
+    "type": "call_url",
+    "method": "POST",
+    "url": "/transparent",
+    "stopAfterFunctionCall": true,
+    "responseParser": "return data?.serviceItemList ? data : {result: 'no data'}"
+  }
+}
+```
+
+#### createTicket — 创建工单
+
+```json
+{
+  "name": "createTicket",
+  "description": "收集完所有必填字段后创建工单",
+  "parameters": { "type": "object", "properties": {}, "additionalProperties": true },
+  "function": {
+    "type": "manual",
+    "stopAfterFunctionCall": true
+  }
+}
+```
+
+**ITSM 调用流程：**
 ```
 用户提出工单需求
-       ↓
-调用 getAllServiceItem
-       ↓
-AI 分析匹配服务项
-       ├─ 能确定 → getCreateTicketParamJsonSchema → 收集字段 → createTicket
-       └─ 无法确定 → requestUserSelectServiceItem → 用户选择后重新进入流程
+  → getAllServiceItem（获取服务项列表）
+  → AI 匹配分析
+    ├─ 能确定 → getCreateTicketParamJsonSchema → 逐个收集字段 → createTicket
+    └─ 无法确定 → requestUserSelectServiceItem → 用户选择 → 重新进入流程
 ```
 
-## 注意事项
+### 7.2 知识库场景
 
-1. `getAllServiceItem` 实际无必填参数，直接调用即可
-2. `requestUserSelectServiceItem` 的 `serviceItemList` 最多传 **1 个**服务项
-3. `createTicket` 是 `manual` 类型，实际创建逻辑由前端实现
-4. `stopAfterFunctionCall: true` 的函数调用后 AI 不会继续输出
+#### fetchKnowledgeElement — 查询知识内容详情
+
+使用 URL 路径参数 `{knowId}`，AI 传入 knowId 后自动替换到 URL 路径中。
+
+```json
+{
+  "name": "fetchKnowledgeElement",
+  "description": "根据知识内容 ID 查询知识库中的具体内容详情",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "knowId": { "type": "string", "description": "知识内容 ID" }
+    },
+    "required": ["knowId"]
+  },
+  "function": {
+    "type": "call_url",
+    "method": "GET",
+    "url": "${STATIC#yqcloud_url}/knowledge/v1/${tenantId}/know/fetch/element/{knowId}",
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "bearer ${yqAccessToken}",
+      "x-tenant-id": "${tenantId}"
+    },
+    "stopAfterFunctionCall": false
+  },
+  "intl": {
+    "zh_CN": { "description": "根据知识内容 ID 查询知识库中的具体内容详情" },
+    "en_US": { "description": "Fetch knowledge element details by knowId." }
+  }
+}
+```
+
+---
+
+## 8. 编写新函数的检查清单
+
+1. `name` 唯一，使用 camelCase
+2. `description` 清晰说明用途，AI 靠它决定何时调用
+3. `parameters` 中列出 AI 需要收集的所有参数及 `required`
+4. URL 路径中需要动态值的部分用 `{paramName}`，运行时自动替换
+5. 需要放 query string 的 POST 参数用 `queryParams` 声明
+6. 需要后处理响应的写 `responseParser`，精简返回数据减少 token 消耗
+7. 交互型函数（需要前端介入）设 `stopAfterFunctionCall: true`
+8. 纯数据查询函数设 `stopAfterFunctionCall: false`，让 AI 继续分析
