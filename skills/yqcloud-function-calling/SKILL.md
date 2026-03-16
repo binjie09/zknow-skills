@@ -83,6 +83,48 @@ URL 中的 `{paramName}` 占位符会被 AI 传入的同名参数值替换。替
 | `stopAfterFunctionCallCondition` | `data`（响应对象）、`_`（lodash） | 返回 true 则停止 AI 继续 |
 | `extraParamsBuilder` | `data`（响应对象）、`_`（lodash） | 提取额外参数传给前端 |
 
+### requestParser 示例
+
+`requestParser` 的 `data` 是 AI 传参的 **JSON 字符串**，必须先 `JSON.parse(data)` 才能使用。返回值作为实际请求参数。
+
+**示例 1：重命名参数**
+```javascript
+// AI 传 { "keyword": "服务器故障" }，转换为 API 需要的 { "searchText": "服务器故障" }
+"requestParser": "const params = JSON.parse(data); return { searchText: params.keyword };"
+```
+
+**示例 2：添加固定参数**
+```javascript
+// AI 传 { "name": "张三" }，追加固定的分页和排序参数
+"requestParser": "const params = JSON.parse(data); return { ...params, page: 0, size: 20, sort: 'createdDate,desc' };"
+```
+
+**示例 3：用 lodash 处理参数**
+```javascript
+// 只保留指定字段，过滤掉 AI 可能多传的参数
+"requestParser": "const params = JSON.parse(data); return _.pick(params, ['id', 'name', 'type']);"
+```
+
+### responseParser 示例
+
+`responseParser` 的 `data` 是 HTTP 响应体**对象**（已自动解析），无需 JSON.parse。返回值作为函数调用结果返回给 AI。
+
+**示例 1：精简返回数据（减少 token 消耗）**
+```javascript
+// 从分页响应中提取列表，只保留关键字段
+"responseParser": "const list = (data?.content || []).filter(i => i.type === 'SERVICE').map(i => _.pick(i, ['id','name','description'])); return { list };"
+```
+
+**示例 2：条件返回**
+```javascript
+"responseParser": "return data?.serviceItemList ? data : {result: 'no data'}"
+```
+
+**示例 3：格式化错误信息**
+```javascript
+"responseParser": "if (data?.failed) { return { error: data.message }; } return { success: true, result: data.body };"
+```
+
 ## 6. 特殊 URL
 
 - **`/transparent`**：不发 HTTP 请求，直接把 AI 传的参数作为"响应"返回。用于需要前端处理的交互场景。
